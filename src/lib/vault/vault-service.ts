@@ -109,11 +109,16 @@ export async function unlockVault(vaultRow: VaultRow, passphrase: string): Promi
   const salt = base64ToBytes(vaultRow.kdf_salt);
   const masterKey = await deriveMasterKeyFromPassphrase(passphrase, salt);
   const verifier = getVaultVerifierMaterial();
-  const decryptedVerifier = await aesGcmDecrypt(
-    masterKey,
-    base64ToBytes(vaultRow.verifier_ciphertext),
-    base64ToBytes(vaultRow.verifier_iv),
-  );
+  let decryptedVerifier: Uint8Array;
+  try {
+    decryptedVerifier = await aesGcmDecrypt(
+      masterKey,
+      base64ToBytes(vaultRow.verifier_ciphertext),
+      base64ToBytes(vaultRow.verifier_iv),
+    );
+  } catch {
+    throw new Error("Incorrect passphrase");
+  }
 
   if (!constantTimeEqual(decryptedVerifier, verifier)) {
     throw new Error("Incorrect passphrase");
