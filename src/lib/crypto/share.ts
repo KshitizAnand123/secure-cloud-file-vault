@@ -63,7 +63,10 @@ export async function deriveShareKey({
     false,
     ["deriveKey"],
   );
-  const salt = passwordSalt ?? randomBytes(SALT_LENGTH);
+  // Token-only shares cannot rely on a random salt unless it is stored.
+  // The token is already 256-bit secret material, so it also acts as the
+  // deterministic PBKDF2 salt when no password salt is present.
+  const salt = passwordSalt ?? token;
   const derived = await crypto.subtle.deriveKey(
     { name: "PBKDF2", salt: toBufferSource(salt), iterations: passwordIterations ?? PBKDF2_ITERATIONS, hash: "SHA-256" },
     material,
